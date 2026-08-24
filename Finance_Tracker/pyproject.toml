@@ -6,6 +6,3 @@ dependencies = [
     "Flask",
     "Werkzeug"
 ]
-
-[tool.vercel]
-entrypoint = "api/index.py"
