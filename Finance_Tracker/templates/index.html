@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard | Student Finance Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('home') }}">Student Finance Manager</a>
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('home') }}">Dashboard</a>
+        <a href="{{ url_for('transactions') }}">Transactions</a>
+        <a href="{{ url_for('budgets') }}">Budgets</a>
+        <a href="{{ url_for('goals') }}">Goals</a>
+        <a href="{{ url_for('recurring_transactions') }}">Recurring</a>
+        <a href="{{ url_for('settings') }}">Settings</a>
+        <a href="{{ url_for('debts') }}">Borrowed/lent</a>
+        <a href="{{ url_for('analytics') }}">Analytics</a>
+        <span class="user-badge" title="Logged in as {{ current_user }}">👤 {{ current_user }}</span>
+        <a href="{{ url_for('logout') }}" class="logout-link">Log out</a>
+      </nav>
+    </header>
+    <main>
+      <div class="page-heading">
+        <div>
+          <h1>Student Finance Manager</h1>
+          <p>{{ dashboard['month_label'] }} overview for <strong>{{ current_user }}</strong></p>
+        </div>
+        <a href="{{ url_for('transactions') }}">Manage transactions →</a>
+      </div>
+
+      <section aria-label="Money overview">
+        <h2>Money overview</h2>
+        <div class="overview-grid">
+          <article>
+            <h3>Available money</h3>
+            <p>₹{{ '%.2f'|format(dashboard['available_money']) }}</p>
+          </article>
+          <article>
+            <h3>Safe to spend</h3>
+            <p>₹{{ '%.2f'|format(dashboard['safe_to_spend']) }}</p>
+            <p class="muted">₹{{ '%.2f'|format(dashboard['safe_per_day']) }}/day for {{ dashboard['remaining_days'] }} days</p>
+          </article>
+          <article>
+            <h3>Today's spending</h3>
+            <p>₹{{ '%.2f'|format(dashboard['today_spending']) }}</p>
+          </article>
+          <article>
+            <h3>Monthly income</h3>
+            <p>₹{{ '%.2f'|format(dashboard['monthly_income']) }}</p>
+          </article>
+          <article>
+            <h3>Monthly expenses</h3>
+            <p>₹{{ '%.2f'|format(dashboard['monthly_expenses']) }}</p>
+          </article>
+          <article>
+            <h3>Monthly savings</h3>
+            <p>₹{{ '%.2f'|format(dashboard['monthly_savings']) }}</p>
+          </article>
+          <article>
+            <h3>Monthly investments</h3>
+            <p>₹{{ '%.2f'|format(dashboard['monthly_investments']) }}</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- AI Financial Assistant Widget -->
+      <section class="assistant-section">
+        <div class="assistant-header">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span style="font-size: 1.6rem;">🤖</span>
+            <div>
+              <h2 style="margin: 0; font-size: 1.2rem;">AI Financial Assistant</h2>
+              <p class="muted" style="margin: 0; font-size: 0.85rem;">Calculated answers based directly on your current balance and commitments</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="assistant-chat" id="assistant-chat">
+          <div class="chat-message bot">
+            <div class="message-content">
+              👋 Hey <strong>{{ current_user }}</strong>! I'm your student finance assistant. You currently have <strong>₹{{ '%.2f'|format(dashboard['safe_to_spend']) }}</strong> safe to spend this month (₹{{ '%.2f'|format(dashboard['safe_per_day']) }}/day).
+              <br><br>
+              Try asking me a question below:
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Question Chips -->
+        <div class="assistant-chips" id="assistant-chips">
+          <button type="button" class="chip-btn" data-query="Can I afford ₹500 shoes?">🛍️ Can I afford ₹500 shoes?</button>
+          <button type="button" class="chip-btn" data-query="Where did most of my money go this month?">🍕 Where did my money go?</button>
+          <button type="button" class="chip-btn" data-query="How much can I spend this week?">🗓️ How much can I spend this week?</button>
+          <button type="button" class="chip-btn" data-query="How are my savings goals doing?">🎯 How are my goals doing?</button>
+          <button type="button" class="chip-btn" data-query="Why is my spending higher this month?">📈 Compare with last month</button>
+        </div>
+
+        <!-- Question Input Form -->
+        <form id="assistant-form" class="assistant-input-bar">
+          <input
+            type="text"
+            id="assistant-input"
+            placeholder="Ask anything (e.g. Can I afford a 1200 jacket?)"
+            autocomplete="off"
+            required
+          >
+          <button type="submit" id="assistant-submit-btn">Ask</button>
+        </form>
+
+        <p class="disclaimer-text">
+          ℹ️ Guidance is based on your verified tracker calculations for informational planning.
+        </p>
+      </section>
+
+      <section>
+        <h2>How safe-to-spend is protected</h2>
+        <p class="muted">Available money is not changed. These amounts are reserved for planning before you spend.</p>
+        <ul>
+          <li>Upcoming recurring commitments: ₹{{ '%.2f'|format(dashboard['recurring_commitments']) }}</li>
+          <li>Suggested goal contributions: ₹{{ '%.2f'|format(dashboard['goal_contributions']) }}</li>
+          <li>Monthly savings reserve: ₹{{ '%.2f'|format(dashboard['savings_reserve']) }}</li>
+          <li>Emergency buffer: ₹{{ '%.2f'|format(dashboard['emergency_buffer']) }}</li>
+        </ul>
+        {% if dashboard['investment_commitments'] %}
+          <p class="muted">Investment commitments included above: ₹{{ '%.2f'|format(dashboard['investment_commitments']) }}</p>
+        {% endif %}
+        {% if dashboard['safe_shortfall'] %}
+          <p class="error">Your planned reserves exceed your available money by ₹{{ '%.2f'|format(dashboard['safe_shortfall']) }}.</p>
+        {% endif %}
+      </section>
+
+      <section>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h2 style="margin: 0;">Recent transactions</h2>
+          <a href="{{ url_for('transactions') }}" style="font-size: 0.9rem;">+ Add transaction</a>
+        </div>
+        {% if dashboard['recent_transactions'] %}
+          <ul class="activity-list" style="list-style: none; padding: 0;">
+            {% for transaction in dashboard['recent_transactions'] %}
+              <li class="transaction-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border);">
+                <div>
+                  <strong>{{ transaction['category'] }}</strong>
+                  <span class="muted">({{ transaction['transaction_type'] }})</span>
+                  —
+                  <span style="font-weight: 600; color: {% if transaction['transaction_type'] == 'expense' %}var(--danger){% else %}var(--success){% endif %};">
+                    {% if transaction['transaction_type'] == 'expense' %}-{% else %}+{% endif %}₹{{ '%.2f'|format(transaction['amount']) }}
+                  </span>
+                  <br>
+                  <small class="muted">{{ transaction['transaction_date'] }} · {{ transaction['payment_method'] }}{% if transaction['merchant'] %} · {{ transaction['merchant'] }}{% endif %}</small>
+                </div>
+                <div class="transaction-actions" style="display: flex; gap: 0.75rem; align-items: center;">
+                  <a href="{{ url_for('edit_transaction', transaction_id=transaction['id']) }}" class="edit-link">Edit</a>
+                  <form
+                    method="post"
+                    action="{{ url_for('delete_transaction', transaction_id=transaction['id']) }}"
+                    onsubmit="return confirm('Are you sure you want to delete this transaction?');"
+                    style="margin: 0; padding: 0; display: inline;"
+                  >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="delete-btn" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 0; font-size: 0.9rem; text-decoration: underline;">Delete</button>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No transactions yet. <a href="{{ url_for('transactions') }}">Add your first transaction</a> to see activity here.</p>
+        {% endif %}
+      </section>
+
+      <section>
+        <h2>Top spending categories this month</h2>
+        {% if dashboard['category_summary'] %}
+          <ul class="summary-list">
+            {% for category in dashboard['category_summary'] %}
+              <li>{{ category['category'] }}: ₹{{ '%.2f'|format(category['total']) }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No expenses recorded for {{ dashboard['month_label'] }} yet.</p>
+        {% endif %}
+      </section>
+
+      {% if dashboard['budget_alerts'] %}
+        <section>
+          <h2>Budget alerts</h2>
+          <ul>
+            {% for alert in dashboard['budget_alerts'] %}
+              <li class="error">
+                {{ alert['label'] }} is {{ '%.0f'|format(alert['percent_used']) }}% used.
+                {% if alert['is_exceeded'] %}This budget has been exceeded.{% else %}You are close to the limit.{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </main>
+
+    <!-- AI Assistant Client Script -->
+    <script>
+      (function() {
+        const chat = document.getElementById('assistant-chat');
+        const form = document.getElementById('assistant-form');
+        const input = document.getElementById('assistant-input');
+        const chipsContainer = document.getElementById('assistant-chips');
+        const csrfToken = "{{ csrf_token }}";
+
+        if (!form || !input || !chat) return;
+
+        // Quick chip clicks
+        chipsContainer.addEventListener('click', (e) => {
+          if (e.target.classList.contains('chip-btn')) {
+            const query = e.target.getAttribute('data-query');
+            if (query) {
+              sendQuery(query);
+            }
+          }
+        });
+
+        // Form submission
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const query = input.value.trim();
+          if (query) {
+            sendQuery(query);
+            input.value = '';
+          }
+        });
+
+        async function sendQuery(query) {
+          appendMessage('user', query);
+          const loadingElem = appendLoadingMessage();
+
+          try {
+            const response = await fetch("{{ url_for('api_assistant') }}", {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+              },
+              body: JSON.stringify({ query: query, csrf_token: csrfToken })
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to get answer.');
+            }
+
+            const data = await response.json();
+            loadingElem.remove();
+            appendMessage('bot', data.reply);
+
+            // Update chips if provided
+            if (data.suggestions && data.suggestions.length > 0) {
+              updateChips(data.suggestions);
+            }
+          } catch (err) {
+            loadingElem.remove();
+            appendMessage('bot', '⚠️ Sorry, I could not process that question right now. Please try again.');
+          }
+        }
+
+        function appendMessage(sender, text) {
+          const msgDiv = document.createElement('div');
+          msgDiv.className = `chat-message ${sender}`;
+
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'message-content';
+
+          // Format basic markdown (bold, bullet points, line breaks)
+          let formatted = text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
+
+          contentDiv.innerHTML = formatted;
+          msgDiv.appendChild(contentDiv);
+          chat.appendChild(msgDiv);
+          chat.scrollTop = chat.scrollHeight;
+          return msgDiv;
+        }
+
+        function appendLoadingMessage() {
+          const msgDiv = document.createElement('div');
+          msgDiv.className = 'chat-message bot';
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'message-content muted';
+          contentDiv.innerHTML = '<em>Thinking and calculating... ⏳</em>';
+          msgDiv.appendChild(contentDiv);
+          chat.appendChild(msgDiv);
+          chat.scrollTop = chat.scrollHeight;
+          return msgDiv;
+        }
+
+        function updateChips(suggestions) {
+          chipsContainer.innerHTML = '';
+          suggestions.forEach(s => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'chip-btn';
+            btn.setAttribute('data-query', s);
+            btn.textContent = s;
+            chipsContainer.appendChild(btn);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

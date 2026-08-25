@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Savings goals | Student Finance Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('home') }}">Student Finance Manager</a>
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('home') }}">Dashboard</a>
+        <a href="{{ url_for('transactions') }}">Transactions</a>
+        <a href="{{ url_for('budgets') }}">Budgets</a>
+        <a href="{{ url_for('goals') }}">Goals</a>
+        <a href="{{ url_for('recurring_transactions') }}">Recurring</a>
+        <a href="{{ url_for('settings') }}">Settings</a>
+        <a href="{{ url_for('debts') }}">Borrowed/lent</a>
+        <a href="{{ url_for('analytics') }}">Analytics</a>
+        <span class="user-badge" title="Logged in as {{ current_user }}">👤 {{ current_user }}</span>
+        <a href="{{ url_for('logout') }}">Log out</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Savings goals</h1>
+      <p class="muted">Plan for a laptop, trip, emergency fund, or anything else important to you.</p>
+
+      {% if error %}
+        <p class="error" role="alert">{{ error }}</p>
+      {% endif %}
+
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <h2>Create a goal</h2>
+        <p>
+          <label for="name">Goal name</label><br>
+          <input id="name" name="name" type="text" placeholder="Laptop" required>
+        </p>
+        <p>
+          <label for="target_amount">Target amount (₹)</label><br>
+          <input id="target_amount" name="target_amount" type="number" min="0.01" step="0.01" required>
+        </p>
+        <p>
+          <label for="saved_amount">Already saved (₹)</label><br>
+          <input id="saved_amount" name="saved_amount" type="number" min="0" step="0.01" value="0">
+        </p>
+        <p>
+          <label for="deadline">Deadline (optional)</label><br>
+          <input id="deadline" name="deadline" type="date">
+        </p>
+        <button type="submit">Create goal</button>
+      </form>
+
+      <h2>Your goals</h2>
+      {% if goals %}
+        <div class="overview-grid">
+          {% for goal in goals %}
+            <article>
+              <h3>{{ goal['name'] }}</h3>
+              <p>₹{{ '%.2f'|format(goal['saved_amount']) }} of ₹{{ '%.2f'|format(goal['target_amount']) }}</p>
+              <p class="muted">{{ '%.0f'|format(goal['percent_complete']) }}% complete · ₹{{ '%.2f'|format(goal['remaining_amount']) }} remaining</p>
+              <div class="progress-track" aria-label="{{ goal['name'] }} savings progress">
+                <div class="progress-fill" style="width: {{ goal['percent_complete'] }}%"></div>
+              </div>
+              <p class="muted">{{ goal['deadline_label'] }}</p>
+              {% if goal['suggested_monthly'] is not none %}
+                <p>Suggested monthly saving: ₹{{ '%.2f'|format(goal['suggested_monthly']) }}</p>
+              {% endif %}
+              <form method="post" action="{{ url_for('add_goal_contribution', goal_id=goal['id']) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label for="contribution-{{ goal['id'] }}">Add savings (₹)</label><br>
+                <input id="contribution-{{ goal['id'] }}" name="amount" type="number" min="0.01" step="0.01" required>
+                <button type="submit">Add to goal</button>
+              </form>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p>No savings goals yet. Create one above to start planning.</p>
+      {% endif %}
+    </main>
+  </body>
+</html>
